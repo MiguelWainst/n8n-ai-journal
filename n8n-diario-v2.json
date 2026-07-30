@@ -1,0 +1,185 @@
+{
+  "name": "Diário automático",
+  "nodes": [
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "llama-3.1-8b-instant",
+          "mode": "list",
+          "cachedResultName": "LLAMA-3.1-8B-INSTANT"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Você é um assistente pessoal especializado em análise de dados estruturados. Sua única função é ler diários pessoais e extrair informações rigorosamente no formato JSON para um banco de dados no Notion.\n\n### Regras Rígidas de Categorização:\nEscolha EXATAMENTE UMA opção para o campo \"categoria\":\nReflexão, Estudos, Carreira, Relacionamento, Família, Saúde, Finanças, Filosofia, Decisão, Conquista, Frustração, Vida pessoal, Outro.\n\nAnalise os dados abaixo:\n---\nASSUNTO: {{ $json.subject }}\nTEXTO DO E-MAIL: {{$json.text || $json.snippet }}\nID DO E-MAIL: {{$json.id }}\n---\n\nResponda ÚNICA e EXCLUSIVAMENTE com um objeto JSON válido. Não inclua saudações, explicações e NÃO use blocos de formatação markdown (como ```json). Entregue apenas as chaves e valores abaixo:\n\n{\n  \"categoria\": \"Escolha UMA opção exata da lista de categorias\",\n  \"humor\": \"Escolha UMA opção exata entre: Muito mal, Mal, Neutro, Bem, Muito bem, Reflexivo, Ansioso, Motivado, Frustrado, Confuso\",\n  \"importancia\": \"Escolha UMA entre: Baixa, Média, Alta\",\n  \"status\": \"Escolha UMA entre: Apenas registro, Preciso refletir, Preciso agir, Resolvido\",\n  \"precisa_de_acao\": false\n}"
+            }
+          ]
+        },
+        "simplify": false,
+        "builtInTools": {},
+        "options": {
+          "store": false,
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        336,
+        0
+      ],
+      "id": "message-a-model-node",
+      "name": "Message a model",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "executeOnce": false,
+      "maxTries": 5,
+      "notesInFlow": false,
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "dataSourceId": {
+          "__rl": true,
+          "value": "YOUR_NOTION_DATABASE_ID",
+          "mode": "list",
+          "cachedResultName": "Diário"
+        },
+        "title": "={{ $('Gmail Trigger').item.json.subject }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Categoria|select",
+              "selectValue": "={{ $('Message a model').item.json.output[1].content[0].text ? JSON.parse($('Message a model').item.json.output[1].content[0].text.replace(/```json/gi, '').replace(/```/g, '').trim()).categoria : '' }}"
+            },
+            {
+              "key": "Humor|select",
+              "selectValue": "={{ $('Message a model').item.json.output[1].content[0].text ? JSON.parse($('Message a model').item.json.output[1].content[0].text.replace(/```json/gi, '').replace(/```/g, '').trim()).humor : '' }}"
+            },
+            {
+              "key": "Status|select",
+              "selectValue": "={{ $('Message a model').item.json.output[1].content[0].text ? JSON.parse($('Message a model').item.json.output[1].content[0].text.replace(/```json/gi, '').replace(/```/g, '').trim()).status : '' }}"
+            },
+            {
+              "key": "Importância|select",
+              "selectValue": "={{ $('Message a model').item.json.output[1].content[0].text ? JSON.parse($('Message a model').item.json.output[1].content[0].text.replace(/```json/gi, '').replace(/```/g, '').trim()).importancia : '' }}"
+            },
+            {
+              "key": "Precisa de ação|checkbox",
+              "checkboxValue": "={{ $('Message a model').item.json.output[1].content[0].text ? JSON.parse($('Message a model').item.json.output[1].content[0].text.replace(/```json/gi, '').replace(/```/g, '').trim()).precisa_de_acao === true : false }}"
+            },
+            {
+              "key": "Gmail|url",
+              "urlValue": "={{ \"[https://mail.google.com/mail/u/0/#inbox/](https://mail.google.com/mail/u/0/#inbox/)\" + $('Gmail Trigger').item.json.id }}"
+            },
+            {
+              "key": "Data|date",
+              "date": "={{ new Date($('Gmail Trigger').item.json.date).toISOString() }}",
+              "timezone": "America/Sao_Paulo"
+            }
+          ]
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "=paragraph",
+              "textContent": "={{ ($('Gmail Trigger').item.json.text || '').slice(0, 1800) }}"
+            },
+            {
+              "textContent": "={{ ($('Gmail Trigger').item.json.text || '').slice(1800) }}"
+            }
+          ]
+        },
+        "options": {},
+        "simple": false
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 3,
+      "position": [
+        592,
+        0
+      ],
+      "id": "notion-create-page-node",
+      "name": "Create a database page",
+      "credentials": {
+        "notionApi": {
+          "id": "",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "label:Diário"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "gmail-trigger-node",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a database page": {
+      "main": [
+        []
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
