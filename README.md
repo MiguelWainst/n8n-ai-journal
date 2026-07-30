@@ -18,7 +18,7 @@ Criar uma automação inteligente para capturar diários pessoais enviados por e
 <img width="100%" alt="workflow-n8n" src="https://github.com/user-attachments/assets/30559258-5b1c-4bbc-adb3-5fca39baaec2" />
 
 
-<img width="800" alt="notion-database" src="https://github.com/user-attachments/assets/092acf13-7141-4d52-8c6d-76e1897732f3" />
+<img width="2131" height="790" alt="notion-database-v2" src="https://github.com/user-attachments/assets/9c2e2eb8-aa8c-4110-93b8-08532c781e59" />
 
 
 ## 🚀 Status
